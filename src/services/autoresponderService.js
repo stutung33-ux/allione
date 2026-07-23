@@ -58,6 +58,15 @@ export async function removeAutoresponder(client, guildId, trigger) {
 }
 
 /**
+ * Remove all autoresponders for a guild.
+ */
+export async function clearAutoresponders(client, guildId) {
+    const key = getAutoresponderKey(guildId);
+    await client.db.set(key, []);
+    logger.info(`All autoresponders cleared for guild ${guildId}`);
+}
+
+/**
  * Check a message against all triggers and return the matching response, or null.
  * Matching is case-insensitive, whole-word contained within the message.
  */

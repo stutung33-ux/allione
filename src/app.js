@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import { Client, Collection, GatewayIntentBits } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import express from 'express';
@@ -210,6 +210,13 @@ class TitanBot extends Client {
       });
     });
 
+    // When PORT is explicitly assigned by the environment (e.g. Railway, Heroku),
+    // that port is the ONLY one the platform health-checks. Retrying on PORT+N
+    // causes "failed during network process" because the health probe never finds
+    // the service. Disable retry when PORT comes from the environment.
+    const portIsEnvAssigned = !!process.env.PORT;
+    const effectiveMaxRetries = portIsEnvAssigned ? 0 : maxPortRetryAttempts;
+
     const startServer = (port, attempt = 0) => {
       let hasStartedListening = false;
       const server = app.listen(port, host, () => {
@@ -224,7 +231,7 @@ class TitanBot extends Client {
         const errorCode = error?.code || 'UNKNOWN_ERROR';
         const errorMessage = error?.message || 'Unknown server error';
 
-        if (!hasStartedListening && errorCode === 'EADDRINUSE' && attempt < maxPortRetryAttempts) {
+        if (!hasStartedListening && errorCode === 'EADDRINUSE' && attempt < effectiveMaxRetries) {
           const nextPort = port + 1;
           startupLog(`Port ${port} is already in use. Trying port ${nextPort}...`);
           setTimeout(() => startServer(nextPort, attempt + 1), 250);

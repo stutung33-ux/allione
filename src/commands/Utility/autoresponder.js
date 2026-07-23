@@ -6,6 +6,7 @@ import {
     getAutoresponders,
     addAutoresponder,
     removeAutoresponder,
+    clearAutoresponders,
 } from '../../services/autoresponderService.js';
 import { logger } from '../../utils/logger.js';
 
@@ -130,8 +131,7 @@ export default {
             }
 
             if (sub === 'clear') {
-                const { getAutoresponderKey } = await import('../../utils/database/keys.js');
-                await interaction.client.db.set(getAutoresponderKey(guildId), []);
+                await clearAutoresponders(interaction.client, guildId);
 
                 return await InteractionHelper.safeEditReply(interaction, {
                     embeds: [successEmbed('Autoresponders Cleared', 'All autoresponder triggers have been removed.')],
