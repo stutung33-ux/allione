@@ -26,7 +26,7 @@ export default {
                     o.setName('trigger').setDescription('The word or phrase that triggers the response').setRequired(true).setMaxLength(100),
                 )
                 .addStringOption((o) =>
-                    o.setName('response').setDescription('What the bot will reply with').setRequired(true).setMaxLength(500),
+                    o.setName('response').setDescription('What the bot will reply with').setRequired(true).setMaxLength(1500),
                 ),
         )
         .addSubcommand((sub) =>
@@ -114,7 +114,7 @@ export default {
 
                 const fields = list.map((entry, i) => ({
                     name: `${i + 1}. \`${entry.trigger}\``,
-                    value: entry.response.length > 100 ? entry.response.slice(0, 97) + '...' : entry.response,
+                    value: entry.response.length > 200 ? entry.response.slice(0, 197) + '...' : entry.response,
                     inline: false,
                 }));
 
