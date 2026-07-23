@@ -18,6 +18,8 @@ import {
   isValidCountingMessage,
   recordCorrectCount,
 } from '../services/countingGameService.js';
+import { getAFK, removeAFK } from '../services/afkService.js';
+import { matchAutoresponder } from '../services/autoresponderService.js';
 
 const MESSAGE_XP_RATE_LIMIT_ATTEMPTS = 12;
 const MESSAGE_XP_RATE_LIMIT_WINDOW_MS = 10000;
@@ -35,6 +37,8 @@ export default {
         return;
       }
 
+      await handleAFK(message, client);
+      await handleAutoresponder(message, client);
       await handlePrefixCommand(message, client);
 
       await handleLeveling(message, client);
@@ -179,6 +183,72 @@ async function handleCountingGame(message, client) {
   } catch (error) {
     logger.error('Error handling counting game:', error);
     return false;
+  }
+}
+
+async function handleAFK(message, client) {
+  try {
+    // If the sender is AFK, remove their status
+    const senderAFK = await getAFK(client, message.guild.id, message.author.id);
+    if (senderAFK) {
+      await removeAFK(client, message.guild.id, message.author.id);
+
+      // Strip [AFK] prefix from nickname if present
+      const member = message.member;
+      if (member && member.manageable && member.displayName.startsWith('[AFK]')) {
+        const cleanName = member.displayName.replace(/^\[AFK\]\s*/i, '');
+        await member.setNickname(cleanName || null).catch(() => {});
+      }
+
+      const elapsed = Date.now() - (senderAFK.timestamp || Date.now());
+      const minutes = Math.floor(elapsed / 60000);
+      const timeStr = minutes < 1 ? 'just now' : minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
+
+      await message.channel.send({
+        embeds: [
+          createEmbed({
+            title: 'Welcome Back!',
+            description: `${message.author}, your AFK status has been removed.\n**You went AFK:** ${timeStr}\n**Reason was:** ${senderAFK.reason}`,
+            color: 'success',
+          }),
+        ],
+      }).catch(() => {});
+    }
+
+    // Notify if a mentioned user is AFK
+    if (message.mentions.users.size === 0) return;
+    for (const [userId, user] of message.mentions.users) {
+      if (user.id === message.author.id) continue;
+      const afkData = await getAFK(client, message.guild.id, userId);
+      if (afkData) {
+        const elapsed = Date.now() - (afkData.timestamp || Date.now());
+        const minutes = Math.floor(elapsed / 60000);
+        const timeStr = minutes < 1 ? 'just now' : minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
+        await message.channel.send({
+          embeds: [
+            createEmbed({
+              title: 'User is AFK',
+              description: `${user} is currently AFK.\n**Reason:** ${afkData.reason}\n**Since:** ${timeStr}`,
+              color: 'info',
+            }),
+          ],
+        }).catch(() => {});
+      }
+    }
+  } catch (error) {
+    logger.error('Error handling AFK:', error);
+  }
+}
+
+async function handleAutoresponder(message, client) {
+  try {
+    if (!message.content || !message.content.trim()) return;
+    const response = await matchAutoresponder(client, message.guild.id, message.content);
+    if (response) {
+      await message.channel.send(response).catch(() => {});
+    }
+  } catch (error) {
+    logger.error('Error handling autoresponder:', error);
   }
 }
 

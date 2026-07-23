@@ -44,6 +44,10 @@ export function getAFKKey(guildId, userId) {
     return `guild:${guildId}:afk:${userId}`;
 }
 
+export function getAutoresponderKey(guildId) {
+    return `guild:${guildId}:autoresponder`;
+}
+
 export function getWelcomeConfigKey(guildId) {
     return `guild:${guildId}:welcome`;
 }
