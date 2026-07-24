@@ -1,3 +1,6 @@
+[phases.setup]
+pkgs = ["nodejs_20", "postgresql"]
+
 [variables]
 PORT = "3000"
 NODE_ENV = "production"
