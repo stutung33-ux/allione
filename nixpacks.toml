@@ -1,6 +1,10 @@
 [phases.setup]
-pkgs = ["nodejs_20", "postgresql"]
+pkgs = ["nodejs_20", "postgresql", "curl"]
 
 [variables]
 PORT = "3000"
 NODE_ENV = "production"
+
+[healthcheck]
+type = "cmd"
+cmd = ["sh", "-c", "curl -fsS http://127.0.0.1:${PORT:-3000}/health"]
