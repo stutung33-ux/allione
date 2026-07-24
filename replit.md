@@ -51,6 +51,34 @@ npm start
 
 Required env vars: `DISCORD_TOKEN`, `CLIENT_ID`, `GUILD_ID`. PostgreSQL is strongly recommended; the bot falls back to in-memory storage automatically if unavailable.
 
+## Making the Bot Public (Add to Any Server)
+
+Slash commands are registered **globally** (no GUILD_ID restriction in the command loader), so the bot can be added to any server.
+
+To enable public invites you must tick **"Public Bot"** in the Discord Developer Portal:
+1. Go to https://discord.com/developers/applications → your app
+2. Click **Bot** in the left sidebar
+3. Enable **Public Bot** and save
+4. Share your OAuth2 invite link (select `bot` + `applications.commands` scopes and the required permissions)
+
+## Recent Feature Changes
+
+| Feature | File(s) |
+|---|---|
+| **Broadcast fix** | `src/commands/Moderation/broadcast.js` — newlines preserved, 500 ms delay between sends prevents rate-limit errors |
+| **`/giverole`** | `src/commands/Moderation/giverole.js` — add/remove a role for a specific member with permission + hierarchy checks |
+| **`/antiraid`** | `src/commands/Moderation/antiraid.js` — configure anti-raid (setup / disable / status / clear) |
+| **Anti-raid engine** | `src/services/antiraidService.js` — sliding-window join tracking, auto-kick/ban, alert channel support |
+| **Auto-detection** | `src/events/guildMemberAdd.js` — anti-raid check fires on every join |
+
+### Anti-Raid Quick Start
+```
+/antiraid setup threshold:10 window:10 action:kick min_account_age:7 alert_channel:#mod-alerts
+```
+- Detects 10 joins within 10 s → raid mode activates for 120 s
+- Kicks any new joiner with an account < 7 days old
+- Posts alerts to `#mod-alerts`
+
 ## Deployment
 
 The live bot is deployed on Railway. Push changes here, then redeploy on Railway. Auto-migration runs on startup (`AUTO_MIGRATE=true`).

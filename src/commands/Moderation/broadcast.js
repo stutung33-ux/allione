@@ -9,7 +9,25 @@ import { logEvent } from '../../utils/moderation.js';
 import { logger } from '../../utils/logger.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
-import { sanitizeInput } from '../../utils/validation.js';
+
+/**
+ * Sanitize broadcast message: trim, enforce max length, strip NUL and DEL
+ * but PRESERVE newlines and other printable whitespace so multi-line
+ * messages are sent as intended.
+ */
+function sanitizeBroadcastMessage(input, maxLength = 2000) {
+    if (typeof input !== 'string') return '';
+    return input
+        .trim()
+        .substring(0, maxLength)
+        .replace(/[\x00\x7F]/g, ''); // NUL + DEL only — keep \n, \r, \t
+}
+
+/** Wait for ms milliseconds (used to respect Discord rate limits). */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Delay between successive channel/DM sends to avoid hitting Discord rate limits. */
+const SEND_DELAY_MS = 500;
 
 const TEXT_CHANNEL_TYPES = [
     ChannelType.GuildText,
@@ -70,7 +88,7 @@ export default {
 
         const subcommand = interaction.options.getSubcommand();
         const rawMessage = interaction.options.getString('message');
-        const message = sanitizeInput(rawMessage, 2000);
+        const message = sanitizeBroadcastMessage(rawMessage, 2000);
 
         if (!message) {
             return replyUserError(interaction, {
@@ -136,6 +154,8 @@ export default {
                     logger.warn(`[Broadcast] Failed to send to #${channel.name}: ${err.message}`);
                     failed++;
                 }
+                // Respect Discord rate limits between successive sends
+                await sleep(SEND_DELAY_MS);
             }
 
             await logEvent({
@@ -185,6 +205,8 @@ export default {
                     // Member has DMs closed or blocked the bot — expected
                     failed++;
                 }
+                // Respect Discord rate limits between successive DM sends
+                await sleep(SEND_DELAY_MS);
             }
 
             await logEvent({

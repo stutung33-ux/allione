@@ -7,6 +7,7 @@ import { logEvent, EVENT_TYPES } from '../services/loggingService.js';
 import { getServerCounters, updateCounter } from '../services/serverstatsService.js';
 import { setBirthday as dbSetBirthday } from '../utils/database.js';
 import { logger } from '../utils/logger.js';
+import { recordJoin, isRaidActive, applyRaidAction, sendRaidAlert } from '../services/antiraidService.js';
 
 export default {
   name: Events.GuildMemberAdd,
@@ -17,6 +18,26 @@ export default {
         const { guild, user } = member;
         
         const config = await getGuildConfig(member.client, guild.id);
+
+        // ── Anti-Raid Detection ────────────────────────────────────────────
+        try {
+            const { isRaid, config: raidCfg } = recordJoin(guild.id, config);
+            const joinCount = (guild._antiRaidJoinCount = (guild._antiRaidJoinCount || 0) + 1);
+
+            if (raidCfg.enabled && (isRaid || isRaidActive(guild.id))) {
+                const actionResult = await applyRaidAction(member, raidCfg);
+                await sendRaidAlert(member.client, guild, raidCfg, member, actionResult, joinCount);
+
+                // If the member was kicked/banned, skip the rest of the join pipeline
+                if (actionResult === 'kicked' || actionResult === 'banned') {
+                    logger.info(`[AntiRaid] ${actionResult} ${user.tag} (${user.id}) in guild ${guild.id}`);
+                    return;
+                }
+            }
+        } catch (raidErr) {
+            logger.error('Error in anti-raid check on member join:', raidErr);
+        }
+        // ──────────────────────────────────────────────────────────────────
         
         const welcomeConfig = await getWelcomeConfig(member.client, guild.id);
         
