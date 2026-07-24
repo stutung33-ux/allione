@@ -51,6 +51,12 @@ class TitanBot extends Client {
   async start() {
     try {
       startupLog('Starting TitanBot...');
+
+      // Start the web server immediately so Railway's health probe can connect
+      // before any slow async work (DB init, Discord login) runs.
+      startupLog('Starting web server...');
+      this.startWebServer();
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       startupLog('Initializing database...');
@@ -72,9 +78,6 @@ class TitanBot extends Client {
       } else {
         startupLog(`✅ Database Status: ${dbStatus.connectionType} (fully operational)`);
       }
-      
-      startupLog('Starting web server...');
-      this.startWebServer();
       
       startupLog('Loading commands...');
       await loadCommands(this);
