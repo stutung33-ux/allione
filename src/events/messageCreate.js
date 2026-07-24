@@ -240,9 +240,20 @@ async function handleAFK(message, client) {
   }
 }
 
+// Deduplication set: prevents the same message from triggering the autoresponder twice
+// (guards against Discord.js duplicate events or double-registration edge cases).
+const _autoresponderSeen = new Set();
+
 async function handleAutoresponder(message, client) {
   try {
     if (!message.content || !message.content.trim()) return;
+
+    // If we already responded to this message, skip.
+    if (_autoresponderSeen.has(message.id)) return;
+    _autoresponderSeen.add(message.id);
+    // Clean up after 10 s so the Set doesn't grow unbounded.
+    setTimeout(() => _autoresponderSeen.delete(message.id), 10000);
+
     const response = await matchAutoresponder(client, message.guild.id, message.content);
     if (response) {
       await message.channel.send(response).catch(() => {});
