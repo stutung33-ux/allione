@@ -106,14 +106,15 @@ export class ResponseCoordinator {
       return this.edit(payload);
     }
 
-    this.interaction.replied = true;
-
+    // Prefix command — send directly to channel
     if (this.message?.channel) {
       const sentMessage = await this.message.channel.send(payload);
       this.setReplyMessage(sentMessage);
+      this.interaction.replied = true;
       return sentMessage;
     }
 
+    // Deferred slash command — edit the deferred placeholder
     if (this.interaction.deferred) {
       if (this.isPrefixInteraction()) {
         return this.sendPrefixPayload(payload);
@@ -122,14 +123,13 @@ export class ResponseCoordinator {
       return null;
     }
 
+    // Already replied — follow up instead of overwriting
     if (this.interaction.replied) {
-      if (this.message?.channel) {
-        return this.message.channel.send(payload);
-      }
       await this.interaction.followUp(payload);
       return null;
     }
 
+    // Fresh slash command — initial reply
     if (this.isPrefixInteraction()) {
       return this.sendPrefixPayload(payload);
     }
