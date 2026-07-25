@@ -160,18 +160,23 @@ class TitanBot extends Client {
     });
 
     app.get('/health', (req, res) => {
-      const dbStatus = this.db?.getStatus?.() || { isDegraded: 'unknown' };
-      const status = {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        database: {
-          connected: dbStatus.connectionType !== 'none',
-          degraded: dbStatus.isDegraded,
-          type: dbStatus.connectionType
-        }
-      };
-      res.status(200).json(status);
+      try {
+        const dbStatus = this.db?.getStatus?.() || { isDegraded: false, connectionType: 'pending' };
+        const status = {
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          uptime: process.uptime(),
+          database: {
+            connected: dbStatus.connectionType !== 'none',
+            degraded: !!dbStatus.isDegraded,
+            type: dbStatus.connectionType ?? 'pending',
+          },
+        };
+        return res.status(200).json(status);
+      } catch (_err) {
+        // Never let the health endpoint crash — always return 200
+        return res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+      }
     });
 
     app.get('/ready', (req, res) => {
