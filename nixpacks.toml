@@ -1,5 +1,8 @@
 [phases.setup]
-pkgs = ["nodejs_20", "postgresql"]
+pkgs = ["nodejs_20", "postgresql", "curl"]
+
+[start]
+healthCheckCmd = "curl -sf http://127.0.0.1:3000/health"
 
 [variables]
 PORT = "3000"
