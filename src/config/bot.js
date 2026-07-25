@@ -148,7 +148,7 @@ export const botConfig = {
       // Default footer text used in bot embeds.
       text: "",
       // Footer icon URL (null = no icon).
-      icon: https://cdn.discordapp.com/icons/1522744422889160815/a_17600c22c5c376f094fc4da1b2c52f80.gif?size=1024,
+      icon: null,
     },
     // Default thumbnail URL for embeds (null = no thumbnail).
     thumbnail: null,
