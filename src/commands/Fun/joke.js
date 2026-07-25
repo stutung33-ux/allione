@@ -664,7 +664,7 @@ export default {
     await InteractionHelper.safeReply(interaction, {
       embeds: [
         createEmbed({
-          title: '😂 Random Joke',
+          title: '😆 Joke',
           description: joke,
           color: 'joke',
           footer: { text: `Joke #${JOKES.indexOf(joke) + 1} of ${JOKES.length}` },
