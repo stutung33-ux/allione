@@ -24,7 +24,7 @@ export const botConfig = {
     activities: [
       {
         name: "Custom Status", // required by Discord API, not shown in the client
-        state: "PEAK KRK",     // this is what people actually see
+        state: "ion run ts",     // this is what people actually see
         type: 4,               // Custom
       },
     ],
@@ -100,7 +100,7 @@ export const botConfig = {
       success: "#57F287",
       error: "#ED4245",
       warning: "#FEE75C",
-      info: "#3498DB",
+      info: "#2158B6",
 
       // Neutral utility colors.
       light: "#FFFFFF",
@@ -141,7 +141,7 @@ export const botConfig = {
     },
     footer: {
       // Default footer text used in bot embeds.
-      text: "Titan Bot",
+      text: "Zephyr bot",
       // Footer icon URL (null = no icon).
       icon: null,
     },
