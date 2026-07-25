@@ -24,6 +24,10 @@ import { matchAutoresponder } from '../services/autoresponderService.js';
 const MESSAGE_XP_RATE_LIMIT_ATTEMPTS = 12;
 const MESSAGE_XP_RATE_LIMIT_WINDOW_MS = 10000;
 
+// Deduplication set: prevents the same message from triggering the autoresponder twice
+// (guards against Discord.js duplicate events or double-registration edge cases).
+const _autoresponderSeen = new Set();
+
 export default {
   name: Events.MessageCreate,
   async execute(message, client) {
@@ -38,9 +42,12 @@ export default {
       }
 
       await handleAFK(message, client);
-      await handleAutoresponder(message, client);
+      const autoresponderProcessed = await handleAutoresponder(message, client);
+      if (autoresponderProcessed) {
+        return; // Stop processing if autoresponder matched
+      }
+      
       await handlePrefixCommand(message, client);
-
       await handleLeveling(message, client);
     } catch (error) {
       logger.error('Error in messageCreate event:', error);
@@ -240,26 +247,36 @@ async function handleAFK(message, client) {
   }
 }
 
-// Deduplication set: prevents the same message from triggering the autoresponder twice
-// (guards against Discord.js duplicate events or double-registration edge cases).
-const _autoresponderSeen = new Set();
-
 async function handleAutoresponder(message, client) {
   try {
-    if (!message.content || !message.content.trim()) return;
+    if (!message.content || !message.content.trim()) return false;
+
+    // Create a unique key for this message (guildId + messageId + authorId)
+    const dedupeKey = `${message.guild.id}:${message.id}:${message.author.id}`;
 
     // If we already responded to this message, skip.
-    if (_autoresponderSeen.has(message.id)) return;
-    _autoresponderSeen.add(message.id);
-    // Clean up after 10 s so the Set doesn't grow unbounded.
-    setTimeout(() => _autoresponderSeen.delete(message.id), 10000);
+    if (_autoresponderSeen.has(dedupeKey)) {
+      logger.debug(`Autoresponder: Skipping duplicate for message ${message.id}`);
+      return false;
+    }
+    
+    // Mark as seen immediately
+    _autoresponderSeen.add(dedupeKey);
+    
+    // Clean up after 5 seconds so the Set doesn't grow unbounded
+    setTimeout(() => _autoresponderSeen.delete(dedupeKey), 5000);
 
     const response = await matchAutoresponder(client, message.guild.id, message.content);
     if (response) {
       await message.channel.send(response).catch(() => {});
+      logger.debug(`Autoresponder: Sent response for message ${message.id}`);
+      return true; // Mark as processed
     }
+    
+    return false; // No autoresponder matched
   } catch (error) {
     logger.error('Error handling autoresponder:', error);
+    return false;
   }
 }
 
