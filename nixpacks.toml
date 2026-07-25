@@ -1,5 +1,5 @@
 [phases.setup]
-pkgs = ["nodejs_20", "postgresql"]
+pkgs = ["nodejs_20"]
 
 [variables]
 PORT = "3000"

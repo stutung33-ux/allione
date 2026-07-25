@@ -116,7 +116,7 @@ class TitanBot extends Client {
 
   startWebServer() {
     const app = express();
-    const port = Number(process.env.PORT || 3000);
+    const port = 3000; // nixpacks bakes HTTP healthcheck on PORT=3000
     const host = '0.0.0.0';
     
     // Health check - always returns 200 OK
