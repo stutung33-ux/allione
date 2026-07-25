@@ -24,9 +24,10 @@ import { matchAutoresponder } from '../services/autoresponderService.js';
 const MESSAGE_XP_RATE_LIMIT_ATTEMPTS = 12;
 const MESSAGE_XP_RATE_LIMIT_WINDOW_MS = 10000;
 
-// Deduplication set: prevents the same message from triggering the autoresponder twice
+// Deduplication map: prevents the same message from triggering the autoresponder twice
 // (guards against Discord.js duplicate events or double-registration edge cases).
-const _autoresponderSeen = new Set();
+// Maps dedupeKey → boolean (true = autoresponder matched & responded, false = no match).
+const _autoresponderSeen = new Map();
 
 export default {
   name: Events.MessageCreate,
@@ -254,25 +255,30 @@ async function handleAutoresponder(message, client) {
     // Create a unique key for this message (guildId + messageId + authorId)
     const dedupeKey = `${message.guild.id}:${message.id}:${message.author.id}`;
 
-    // If we already responded to this message, skip.
+    // If we already processed this message, return the stored result so the
+    // rest of the pipeline (prefix commands, leveling) behaves consistently
+    // with what happened on the first event fire.
     if (_autoresponderSeen.has(dedupeKey)) {
       logger.debug(`Autoresponder: Skipping duplicate for message ${message.id}`);
-      return false;
+      return _autoresponderSeen.get(dedupeKey);
     }
-    
-    // Mark as seen immediately
-    _autoresponderSeen.add(dedupeKey);
-    
-    // Clean up after 5 seconds so the Set doesn't grow unbounded
-    setTimeout(() => _autoresponderSeen.delete(dedupeKey), 5000);
 
     const response = await matchAutoresponder(client, message.guild.id, message.content);
-    if (response) {
+    const matched = !!response;
+
+    // Record the result before sending, so any concurrent duplicate event
+    // that checks after the await sees the correct value.
+    _autoresponderSeen.set(dedupeKey, matched);
+
+    // Clean up after 5 seconds so the Map doesn't grow unbounded
+    setTimeout(() => _autoresponderSeen.delete(dedupeKey), 5000);
+
+    if (matched) {
       await message.channel.send(response).catch(() => {});
       logger.debug(`Autoresponder: Sent response for message ${message.id}`);
       return true; // Mark as processed
     }
-    
+
     return false; // No autoresponder matched
   } catch (error) {
     logger.error('Error handling autoresponder:', error);
