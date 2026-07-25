@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { infoEmbed } from '../../utils/embeds.js';
+import { createEmbed } from '../../utils/embeds.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { fetchFunGif } from '../../utils/funGifs.js';
 
 const RESPONSES = [
     'waves hello at',
@@ -23,13 +24,19 @@ export default {
         await InteractionHelper.safeDefer(interaction);
         const target = interaction.options.getUser('user');
         const resp = RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
+        const gifUrl = await fetchFunGif('wave');
 
         const desc = target
             ? `**${interaction.user.username}** ${resp} **${target.username}**! 👋`
             : `**${interaction.user.username}** waves at everyone! 👋`;
 
         await InteractionHelper.safeEditReply(interaction, {
-            embeds: [infoEmbed('👋 Wave!', desc)],
+            embeds: [createEmbed({
+                title: '👋 Wave!',
+                description: desc,
+                color: 'info',
+                image: gifUrl,
+            })],
         });
     },
 };

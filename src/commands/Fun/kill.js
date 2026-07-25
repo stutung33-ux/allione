@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { warningEmbed } from '../../utils/embeds.js';
+import { createEmbed } from '../../utils/embeds.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { fetchFunGif } from '../../utils/funGifs.js';
 
 const METHODS = [
     'threw a rubber duck at',
@@ -29,14 +30,15 @@ export default {
         await InteractionHelper.safeDefer(interaction);
         const target = interaction.options.getUser('user');
         const method = METHODS[Math.floor(Math.random() * METHODS.length)];
+        const gifUrl = await fetchFunGif('shoot');
 
         await InteractionHelper.safeEditReply(interaction, {
-            embeds: [
-                warningEmbed(
-                    '💀 Roleplay Kill',
-                    `**${interaction.user.username}** ${method} **${target.username}**! RIP. 😈\n\n*This is roleplay only. No one was harmed.*`,
-                ),
-            ],
+            embeds: [createEmbed({
+                title: '💀 Roleplay Kill',
+                description: `**${interaction.user.username}** ${method} **${target.username}**! RIP. 😈\n\n*This is roleplay only. No one was harmed.*`,
+                color: 'warning',
+                image: gifUrl,
+            })],
         });
     },
 };

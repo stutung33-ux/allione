@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { successEmbed } from '../../utils/embeds.js';
+import { createEmbed } from '../../utils/embeds.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { fetchFunGif } from '../../utils/funGifs.js';
 
 const RESPONSES = [
     'bursts out laughing!',
@@ -19,9 +20,15 @@ export default {
     async execute(interaction) {
         await InteractionHelper.safeDefer(interaction);
         const resp = RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
+        const gifUrl = await fetchFunGif('laugh');
 
         await InteractionHelper.safeEditReply(interaction, {
-            embeds: [successEmbed('😂 LOL!', `**${interaction.user.username}** ${resp} 💀`)],
+            embeds: [createEmbed({
+                title: '😂 LOL!',
+                description: `**${interaction.user.username}** ${resp} 💀`,
+                color: 'success',
+                image: gifUrl,
+            })],
         });
     },
 };

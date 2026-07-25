@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { warningEmbed } from '../../utils/embeds.js';
+import { createEmbed } from '../../utils/embeds.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { fetchFunGif } from '../../utils/funGifs.js';
 
 const RESPONSES = [
     'slaps with a fish',
@@ -23,9 +24,15 @@ export default {
         await InteractionHelper.safeDefer(interaction);
         const target = interaction.options.getUser('user');
         const resp = RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
+        const gifUrl = await fetchFunGif('slap');
 
         await InteractionHelper.safeEditReply(interaction, {
-            embeds: [warningEmbed('👋 Slap!', `**${interaction.user.username}** ${resp} **${target.username}**! 😤`)],
+            embeds: [createEmbed({
+                title: '👋 Slap!',
+                description: `**${interaction.user.username}** ${resp} **${target.username}**! 😤`,
+                color: 'warning',
+                image: gifUrl,
+            })],
         });
     },
 };

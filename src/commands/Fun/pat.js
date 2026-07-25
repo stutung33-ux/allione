@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { successEmbed } from '../../utils/embeds.js';
+import { createEmbed } from '../../utils/embeds.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { fetchFunGif } from '../../utils/funGifs.js';
 
 const RESPONSES = [
     'gives a gentle pat on the head.',
@@ -23,9 +24,15 @@ export default {
         await InteractionHelper.safeDefer(interaction);
         const target = interaction.options.getUser('user');
         const resp = RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
+        const gifUrl = await fetchFunGif('pat');
 
         await InteractionHelper.safeEditReply(interaction, {
-            embeds: [successEmbed('👋 Pat!', `**${interaction.user.username}** ${resp} **${target.username}** 🥺`)],
+            embeds: [createEmbed({
+                title: '👋 Pat!',
+                description: `**${interaction.user.username}** ${resp} **${target.username}** 🥺`,
+                color: 'success',
+                image: gifUrl,
+            })],
         });
     },
 };
