@@ -779,7 +779,7 @@ export default {
           createEmbed({
             title: '📖 Bible',
             description: `No verses found for **${interaction.options.getString('book')}**. Try a book like \`John\`, \`Psalms\`, or \`Romans\`.`,
-            color: 'error',
+            color: 'warning',
           }),
         ],
       });
@@ -792,7 +792,7 @@ export default {
         createEmbed({
           title: `📖 ${verse.ref}`,
           description: `*"${verse.text}"*`,
-          color: 'primary',
+          color: 'bible',
           footer: { text: `${pool.length === VERSES.length ? `${VERSES.length} verses across all books` : `${pool.length} verse(s) found`} • NIV` },
         }),
       ],

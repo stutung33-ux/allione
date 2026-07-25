@@ -667,7 +667,7 @@ export default {
         createEmbed({
           title: '😂 Random Joke',
           description: joke,
-          color: 'primary',
+          color: 'joke',
           footer: { text: `Joke #${JOKES.indexOf(joke) + 1} of ${JOKES.length}` },
         }),
       ],

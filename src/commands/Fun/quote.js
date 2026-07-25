@@ -599,7 +599,7 @@ export default {
         createEmbed({
           title: '💬 Inspirational Quote',
           description: `*"${quote.text}"*\n\n— **${quote.author}**`,
-          color: 'primary',
+          color: 'quote',
           footer: { text: `Quote ${QUOTES.indexOf(quote) + 1} of ${QUOTES.length}` },
         }),
       ],

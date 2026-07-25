@@ -93,14 +93,14 @@ export const botConfig = {
   embeds: {
     colors: {
       // Main brand colors.
-      primary: "#336699",
+      primary: "#5865F2",      // Discord blurple — vivid brand anchor
       secondary: "#2F3136",
 
       // Standard status colors for success/error/warning/info messages.
-      success: "#57F287",
-      error: "#ED4245",
-      warning: "#FEE75C",
-      info: "#2158B6",
+      success: "#2ECC71",      // Emerald green
+      error: "#E74C3C",        // Flat UI red
+      warning: "#F39C12",      // Rich amber
+      info: "#3498DB",         // Bright cornflower blue
 
       // Neutral utility colors.
       light: "#FFFFFF",
@@ -109,34 +109,39 @@ export const botConfig = {
 
       // Discord-style palette shortcuts.
       blurple: "#5865F2",
-      green: "#57F287",
-      yellow: "#FEE75C",
+      green: "#2ECC71",
+      yellow: "#F1C40F",
       fuchsia: "#EB459E",
-      red: "#ED4245",
+      red: "#E74C3C",
       black: "#000000",
 
       // Feature-specific colors.
       giveaway: {
-        active: "#57F287",
-        ended: "#ED4245",
+        active: "#2ECC71",
+        ended: "#E74C3C",
       },
       ticket: {
-        open: "#57F287",
-        claimed: "#FAA61A",
-        closed: "#ED4245",
-        pending: "#99AAB5",
+        open: "#2ECC71",
+        claimed: "#E67E22",    // Vivid orange
+        closed: "#E74C3C",
+        pending: "#95A5A6",
       },
-      economy: "#F1C40F",
-      birthday: "#E91E63",
-      moderation: "#9B59B6",
+      economy: "#F1C40F",      // Gold
+      birthday: "#E91E63",     // Hot pink
+      moderation: "#9B59B6",   // Amethyst purple
+
+      // Fun-category command colors.
+      joke: "#F39C12",         // Warm amber — playful
+      quote: "#8E44AD",        // Deep violet — contemplative
+      bible: "#D4A017",        // Antique gold — reverent
 
       // Ticket priority color mapping.
       priority: {
         none: "#95A5A6",
-        low: "#3498db",
-        medium: "#2ecc71",
-        high: "#f1c40f",
-        urgent: "#e74c3c",
+        low: "#3498DB",
+        medium: "#2ECC71",
+        high: "#F39C12",
+        urgent: "#E74C3C",
       },
     },
     footer: {
