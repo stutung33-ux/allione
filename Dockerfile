@@ -1,14 +1,18 @@
 FROM node:20-alpine
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-ENV NODE_ENV=production
-
+# Install deps first (cached layer)
 COPY package*.json ./
 RUN npm ci --omit=dev
 
+# Copy source
 COPY . .
 
-EXPOSE 3000
+# Let Railway assign PORT; app reads process.env.PORT
+ENV NODE_ENV=production
 
-CMD ["npm", "start"]
+# Disable baked-in Docker HEALTHCHECK — Railway probes via healthcheckPath
+HEALTHCHECK NONE
+
+CMD ["node", "src/app.js"]

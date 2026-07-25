@@ -116,10 +116,7 @@ class TitanBot extends Client {
 
   startWebServer() {
     const app = express();
-    // Health check is baked into the Docker image targeting port 3000.
-    // Railway injects its own PORT env var but this bot only needs HTTP for health checks,
-    // so we always bind to 3000 to match the probe.
-    const port = 3000;
+    const port = Number(process.env.PORT || 3000);
     const host = '0.0.0.0';
     
     // Health check - always returns 200 OK
