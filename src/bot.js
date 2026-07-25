@@ -1,5 +1,7 @@
-const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
-const config = require('./config.json');
+import { Client, GatewayIntentBits, ActivityType } from 'discord.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -18,4 +20,4 @@ client.once('ready', () => {
   console.log('✓ Bot is now displaying Spotify-like interface with play button');
 });
 
-client.login(config.token);
+client.login(process.env.DISCORD_TOKEN);
