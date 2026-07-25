@@ -146,7 +146,7 @@ export const botConfig = {
     },
     footer: {
       // Default footer text used in bot embeds.
-      text: "Zephyr bot",
+      text: "Zephyr's bot",
       // Footer icon URL (null = no icon).
       icon: null,
     },
