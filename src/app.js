@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, Collection, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, ActivityType } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import express from 'express';
 import cron from 'node-cron';
@@ -110,6 +110,18 @@ class TitanBot extends Client {
       logger.error('Failed to start bot:', error);
       process.exit(1);
     }
+  }
+
+  setupSpotifyStatus() {
+    // Set bot status to Listening with Spotify-like interface
+    this.user.setActivity('No Other Heart by Mac DeMarco', {
+      type: ActivityType.Listening,
+      name: 'No Other Heart',
+      details: 'Mac DeMarco',
+      state: 'Playing',
+    });
+    
+    startupLog('✅ Spotify-like status set: Listening to No Other Heart by Mac DeMarco');
   }
 
   startWebServer() {
@@ -439,6 +451,12 @@ try {
   bot.start().catch((error) => {
     logger.error('Fatal error during bot startup:', error);
     bot.shutdown('STARTUP_ERROR');
+  });
+  
+  // Set Spotify-like status when bot is ready
+  const bot_instance = bot;
+  bot.once('ready', () => {
+    bot_instance.setupSpotifyStatus();
   });
 } catch (error) {
   logger.error('Fatal error during bot startup:', error);
