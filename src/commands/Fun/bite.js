@@ -25,7 +25,7 @@ export default {
         const resp = RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
 
         await InteractionHelper.safeEditReply(interaction, {
-            embeds: [warningEmbed('😬 Bite!', `**${interaction.user.username}** ${resp} **${target.username}**! 🦷`)],
+            embeds: [warningEmbed('☠️ Bite!', `**${interaction.user.username}** ${resp} **${target.username}**! 🦷`)],
         });
     },
 };
