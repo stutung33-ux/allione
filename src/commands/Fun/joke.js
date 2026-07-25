@@ -659,10 +659,9 @@ export default {
   category: 'Fun',
 
   async execute(interaction) {
-    await InteractionHelper.safeDefer(interaction);
     const joke = JOKES[Math.floor(Math.random() * JOKES.length)];
 
-    await InteractionHelper.safeEditReply(interaction, {
+    await InteractionHelper.safeReply(interaction, {
       embeds: [
         createEmbed({
           title: '😂 Random Joke',

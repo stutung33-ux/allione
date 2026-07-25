@@ -591,10 +591,9 @@ export default {
   category: 'Fun',
 
   async execute(interaction) {
-    await InteractionHelper.safeDefer(interaction);
     const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
 
-    await InteractionHelper.safeEditReply(interaction, {
+    await InteractionHelper.safeReply(interaction, {
       embeds: [
         createEmbed({
           title: '💬 Inspirational Quote',

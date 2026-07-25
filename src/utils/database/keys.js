@@ -40,6 +40,10 @@ export function getEconomyPrefix(guildId) {
     return `guild:${guildId}:economy:`;
 }
 
+export function getEconomySettingsKey(guildId) {
+    return `guild:${guildId}:economy:settings`;
+}
+
 export function getAFKKey(guildId, userId) {
     return `guild:${guildId}:afk:${userId}`;
 }

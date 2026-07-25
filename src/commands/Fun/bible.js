@@ -760,8 +760,6 @@ export default {
   category: 'Fun',
 
   async execute(interaction) {
-    await InteractionHelper.safeDefer(interaction);
-
     const bookQuery = interaction.options.getString('book')?.toLowerCase().trim();
     let pool = VERSES;
 
@@ -774,7 +772,7 @@ export default {
     }
 
     if (!pool.length) {
-      return InteractionHelper.safeEditReply(interaction, {
+      return InteractionHelper.safeReply(interaction, {
         embeds: [
           createEmbed({
             title: '📖 Bible',
@@ -787,7 +785,7 @@ export default {
 
     const verse = pool[Math.floor(Math.random() * pool.length)];
 
-    await InteractionHelper.safeEditReply(interaction, {
+    await InteractionHelper.safeReply(interaction, {
       embeds: [
         createEmbed({
           title: `📖 ${verse.ref}`,

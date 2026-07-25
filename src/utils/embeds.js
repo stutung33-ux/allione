@@ -76,18 +76,8 @@ function normalizeFooterText(footer) {
   return '';
 }
 
-function isImportantFooter(footerText) {
-  if (!footerText) {
-    return false;
-  }
-
-  const normalized = footerText.toLowerCase();
-  return /\b(close|closes|closed|expire|expires|available in|page\s+\d+|dashboard closes|ticket id)\b/.test(normalized);
-}
-
 const originalSetDescription = EmbedBuilder.prototype.setDescription;
 const originalSetFooter = EmbedBuilder.prototype.setFooter;
-const originalSetTimestamp = EmbedBuilder.prototype.setTimestamp;
 
 EmbedBuilder.prototype.setDescription = function(description = '') {
   const descString = sanitizeEmbedText(description || '');
@@ -97,16 +87,12 @@ EmbedBuilder.prototype.setDescription = function(description = '') {
 
 EmbedBuilder.prototype.setFooter = function(footer) {
   const footerText = sanitizeEmbedText(normalizeFooterText(footer));
-  if (!footerText || !isImportantFooter(footerText)) {
+  if (!footerText) {
     return this;
   }
 
   this[EMBED_FOOTER_SYMBOL] = footerText;
   return originalSetFooter.call(this, { text: footerText });
-};
-
-EmbedBuilder.prototype.setTimestamp = function() {
-  return this;
 };
 
 export function createEmbed({

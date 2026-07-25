@@ -35,7 +35,8 @@ export default {
                         .setDescription("Criteria for automatic verification")
                         .addChoices(
                             { name: "Account Age", value: "account_age" },
-                            { name: "No Criteria", value: "none" }
+                            { name: "Server Size (auto-verify on small servers)", value: "server_size" },
+                            { name: "No Criteria (verify all users)", value: "none" }
                         )
                         .setRequired(true)
                 )
