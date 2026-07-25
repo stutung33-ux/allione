@@ -148,7 +148,7 @@ export const botConfig = {
       // Default footer text used in bot embeds.
       text: "",
       // Footer icon URL (null = no icon).
-      icon: servericon,
+      icon: null,
     },
     // Default thumbnail URL for embeds (null = no thumbnail).
     thumbnail: null,
