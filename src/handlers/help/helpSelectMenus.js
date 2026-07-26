@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { Collection, ActionRowBuilder, MessageFlags } from 'discord.js';
 import { logger } from '../../utils/logger.js';
 import { handleInteractionError } from '../../utils/errorHandler.js';
+import { createInitialHelpMenu } from '../../commands/Core/help.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -122,10 +123,8 @@ function normalizeCommandData(command) {
 
 async function createCategoryCommandsMenu(category, client) {
     const categoryName = formatCategoryName(category);
-    const icon = CATEGORY_ICONS[categoryName] || "🔍";
 
-    const categoryCommands = [];
-
+    const names = [];
     try {
         const categoryPath = path.join(__dirname, "../../commands", category);
         const commandFiles = (await fs.readdir(categoryPath))
@@ -137,238 +136,52 @@ async function createCategoryCommandsMenu(category, client) {
             const commandModule = await import(`file://${filePath}`);
             const command = commandModule.default;
             const commandData = normalizeCommandData(command);
-
-            if (commandData) {
-                if (
-                    commandData.name === "help" ||
-                    commandData.name === "commandlist"
-                )
-                    continue;
-
-                categoryCommands.push(...buildHelpEntries(command, categoryName));
-            }
+            if (!commandData) continue;
+            if (commandData.name === "help" || commandData.name === "commandlist") continue;
+            names.push(...buildHelpEntries(command, categoryName).map(e => e.displayName));
         }
     } catch (error) {
-        logger.error(
-            `Error reading commands from category ${category}:`,
-            error,
-        );
+        logger.error(`Error reading commands from category ${category}:`, error);
     }
 
-    categoryCommands.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    names.sort((a, b) => a.localeCompare(b));
 
-    let registeredCommands = new Collection();
-    try {
-        if (client?.application?.commands?.fetch) {
-            const commands = await client.application.commands.fetch();
-            for (const cmd of commands.values()) {
-                registeredCommands.set(cmd.name, cmd);
+    // Build compact tag chunks that fit in Discord's 1024-char field limit
+    const fields = [];
+    if (names.length > 0) {
+        const chunks = [];
+        let cur = '';
+        for (const tag of names.map(n => `\`${n}\``)) {
+            const next = cur ? `${cur} ${tag}` : tag;
+            if (next.length > 1024) {
+                if (cur) chunks.push(cur);
+                cur = tag;
+            } else {
+                cur = next;
             }
         }
-    } catch (error) {
-        logger.error('Error fetching registered commands:', error);
+        if (cur) chunks.push(cur);
+        chunks.forEach((chunk, ci) => {
+            fields.push({ name: ci === 0 ? 'Commands' : '\u200b', value: chunk, inline: false });
+        });
     }
 
     const embed = createEmbed({
-        title: `${icon} ${categoryName} Commands`,
-        description: categoryCommands.length > 0
-            ? `Click any command mention below to use it.`
-            : `No commands found in the **${categoryName}** category.`
+        title: `${categoryName} Commands`,
+        description: names.length === 0 ? `No commands found in the **${categoryName}** category.` : null,
+        fields,
     });
+    embed.setFooter({ text: 'Use /help <command> for more information' });
 
-    if (categoryCommands.length > 0) {
-        const commandMentions = categoryCommands
-            .map((cmd) => {
-                const registeredCmd = registeredCommands.get(cmd.baseName);
-                if (registeredCmd && registeredCmd.id) {
-                    return `</${cmd.displayName}:${registeredCmd.id}> · ${cmd.description}`;
-                }
-                return `\`/${cmd.displayName}\` · ${cmd.description}`;
-            })
-            .join("\n");
-
-        const maxLength = 1000;
-        if (commandMentions.length <= maxLength) {
-            embed.addFields({
-                name: "Commands",
-                value: commandMentions,
-                inline: false,
-            });
-        } else {
-            const chunks = [];
-            let currentChunk = "";
-            const lines = commandMentions.split("\n");
-
-            for (const line of lines) {
-                if ((currentChunk + "\n" + line).length > maxLength) {
-                    if (currentChunk) chunks.push(currentChunk);
-                    currentChunk = line;
-                } else {
-                    currentChunk += (currentChunk ? "\n" : "") + line;
-                }
-            }
-            if (currentChunk) chunks.push(currentChunk);
-
-            chunks.forEach((chunk, index) => {
-                embed.addFields({
-                    name: `Commands (Part ${index + 1})`,
-                    value: chunk,
-                    inline: false,
-                });
-            });
-        }
-    }
-
-    embed.setFooter({ text: FOOTER_TEXT });
-    embed.setTimestamp();
-
-    const backButton = createButton(
-        BACK_BUTTON_ID,
-        "Back",
-        "primary",
-        "⬅️",
-        false,
-    );
-
+    const backButton = createButton(BACK_BUTTON_ID, "Back", "primary", "⬅️", false);
     const buttonRow = new ActionRowBuilder().addComponents(backButton);
 
-    return {
-        embeds: [embed],
-        components: [buttonRow],
-    };
+    return { embeds: [embed], components: [buttonRow] };
 }
 
 export async function createAllCommandsMenu(page = 1, client) {
-    const commandsPerPage = 45;
-    const allCommands = [];
-
-    const commandsPath = path.join(__dirname, "../../commands");
-    const categoryDirs = (
-        await fs.readdir(commandsPath, { withFileTypes: true })
-    )
-        .filter((dirent) => dirent.isDirectory())
-        .map((dirent) => dirent.name)
-        .sort();
-
-    for (const category of categoryDirs) {
-        try {
-            const categoryPath = path.join(
-                __dirname,
-                "../../commands",
-                category,
-            );
-            const commandFiles = (await fs.readdir(categoryPath))
-                .filter((file) => file.endsWith(".js"))
-                .sort();
-
-            for (const file of commandFiles) {
-                const filePath = path.join(categoryPath, file);
-                const commandModule = await import(`file://${filePath}`);
-                const command = commandModule.default;
-                const commandData = normalizeCommandData(command);
-
-                if (commandData) {
-                    if (
-                        commandData.name === "help" ||
-                        commandData.name === "commandlist"
-                    )
-                        continue;
-
-                    const categoryName = formatCategoryName(category);
-
-                    allCommands.push(...buildHelpEntries(command, categoryName));
-                }
-            }
-        } catch (error) {
-            logger.error(
-                `Error reading commands from category ${category}:`,
-                error,
-            );
-        }
-    }
-
-    allCommands.sort((a, b) => a.displayName.localeCompare(b.displayName));
-
-    let registeredCommands = new Collection();
-    try {
-        if (client?.application?.commands?.fetch) {
-            const commands = await client.application.commands.fetch();
-            for (const cmd of commands.values()) {
-                registeredCommands.set(cmd.name, cmd);
-            }
-        }
-    } catch (error) {
-        logger.error('Error fetching registered commands:', error);
-    }
-
-    const totalPages = Math.ceil(allCommands.length / commandsPerPage);
-    const startIndex = (page - 1) * commandsPerPage;
-    const endIndex = startIndex + commandsPerPage;
-    const pageCommands = allCommands.slice(startIndex, endIndex);
-
-    const embed = createEmbed({
-        title: "📋 All Commands",
-        description: `Browse every available command in one list. Use the page buttons below to move through the full set.`
-    });
-
-    embed.setFooter({ text: FOOTER_TEXT });
-    embed.setTimestamp();
-
-    if (pageCommands.length > 0) {
-        const commandMentions = pageCommands.map((cmd) => {
-            const registeredCmd = registeredCommands.get(cmd.baseName);
-            if (registeredCmd && registeredCmd.id) {
-                return `</${cmd.displayName}:${registeredCmd.id}> · ${cmd.category}`;
-            }
-            return `\`/${cmd.displayName}\` · ${cmd.category}`;
-        });
-
-        const columnCount = pageCommands.length > 20 ? 3 : (pageCommands.length > 10 ? 2 : 1);
-        const chunkSize = Math.ceil(commandMentions.length / columnCount);
-
-        for (let i = 0; i < columnCount; i++) {
-            const chunk = commandMentions
-                .slice(i * chunkSize, (i + 1) * chunkSize)
-                .join("\n");
-
-            if (!chunk) continue;
-
-            embed.addFields({
-                name: i === 0 ? `Commands (Page ${page})` : "Commands (cont.)",
-                value: chunk,
-                inline: columnCount > 1,
-            });
-        }
-    }
-
-    const components = [];
-
-    if (totalPages > 1) {
-        const paginationRow = getPaginationRow(
-            PAGINATION_PREFIX,
-            page,
-            totalPages,
-        );
-        components.push(paginationRow);
-    }
-
-    const backButton = createButton(
-        BACK_BUTTON_ID,
-        "Back",
-        "primary",
-        "⬅️",
-        false,
-    );
-
-    const buttonRow = new ActionRowBuilder().addComponents(backButton);
-    components.push(buttonRow);
-
-    return {
-        embeds: [embed],
-        components,
-        currentPage: page,
-        totalPages,
-    };
+    // The "All Commands" view is now the main help index — delegate to it directly.
+    return createInitialHelpMenu(client);
 }
 
 export const helpCategorySelectMenu = {

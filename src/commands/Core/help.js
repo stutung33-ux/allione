@@ -4,9 +4,7 @@ import {
 } from "discord.js";
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 import { createEmbed } from "../../utils/embeds.js";
-import {
-    createSelectMenu,
-} from "../../utils/components.js";
+import { createSelectMenu } from "../../utils/components.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -18,102 +16,116 @@ const CATEGORY_SELECT_ID = "help-category-select";
 const ALL_COMMANDS_ID = "help-all-commands";
 const HELP_MENU_TIMEOUT_MS = 5 * 60 * 1000;
 
-const CATEGORY_ICONS = {
-    Core: "ℹ️",
-    Moderation: "🛡️",
-    Economy: "💰",
-    Music: "🎵",
-    Fun: "🎮",
-    Leveling: "📊",
-    Utility: "🔧",
-    Ticket: "🎫",
-    Welcome: "👋",
-    Giveaway: "🎉",
-    Counter: "🔢",
-    Tools: "🛠️",
-    Search: "🔍",
-    "Reaction Roles": "🎭",
-    Community: "👥",
-    Birthday: "🎂",
-    "Join To Create": "🔌",
-    Verification: "✅",
-};
+const SUBCOMMAND_TYPE = 1;
+const SUBCOMMAND_GROUP_TYPE = 2;
 
-function formatCategoryName(rawCategory) {
-    return rawCategory
-        .replace(/_/g, '')
+// Simple cache to avoid rebuilding on every /help invocation
+let _cache = null;
+let _cacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000;
+
+function formatCategoryName(raw) {
+    return raw
+        .replace(/_/g, ' ')
         .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/\b\w/g, (char) => char.toUpperCase());
+        .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function extractCommandNames(data) {
+    if (!data?.name) return [];
+    const opts = Array.isArray(data.options) ? data.options : [];
+    const names = [];
+    for (const opt of opts) {
+        if (!opt) continue;
+        if (opt.type === SUBCOMMAND_TYPE) {
+            names.push(`${data.name} ${opt.name}`);
+        } else if (opt.type === SUBCOMMAND_GROUP_TYPE) {
+            for (const nested of (opt.options || [])) {
+                if (nested?.type === SUBCOMMAND_TYPE) {
+                    names.push(`${data.name} ${opt.name} ${nested.name}`);
+                }
+            }
+        }
+    }
+    if (names.length === 0) names.push(data.name);
+    return names;
 }
 
 export async function createInitialHelpMenu(client) {
+    const now = Date.now();
+    if (_cache && now - _cacheTime < CACHE_TTL) return _cache;
+
     const commandsPath = path.join(__dirname, "../../commands");
-    const categoryDirs = (
-        await fs.readdir(commandsPath, { withFileTypes: true })
-    )
-        .filter((dirent) => dirent.isDirectory())
-        .map((dirent) => dirent.name)
+    const categoryDirs = (await fs.readdir(commandsPath, { withFileTypes: true }))
+        .filter(d => d.isDirectory())
+        .map(d => d.name)
         .sort();
 
-    const options = [
-        {
-            label: "📋 All Commands",
-            description: "Browse every available command in a single list",
-            value: ALL_COMMANDS_ID,
-        },
-        ...categoryDirs.map((category) => {
-            const categoryName = formatCategoryName(category);
-            const icon = CATEGORY_ICONS[categoryName] || "🔍";
-            return {
-                label: `${icon} ${categoryName}`,
-                description: `View commands in the ${categoryName} category`,
-                value: category,
-            };
-        }),
+    const categories = [];
+    let totalCommands = 0;
+
+    for (const dir of categoryDirs) {
+        const displayName = formatCategoryName(dir);
+        const names = [];
+        try {
+            const catPath = path.join(commandsPath, dir);
+            const files = (await fs.readdir(catPath)).filter(f => f.endsWith('.js')).sort();
+            for (const file of files) {
+                const mod = await import(`file://${path.join(catPath, file)}`);
+                const cmd = mod.default;
+                if (!cmd?.data) continue;
+                const raw = typeof cmd.data.toJSON === 'function' ? cmd.data.toJSON() : cmd.data;
+                if (!raw?.name || raw.name === 'help' || raw.name === 'commandlist') continue;
+                names.push(...extractCommandNames(raw));
+            }
+        } catch {}
+        if (names.length === 0) continue;
+        names.sort((a, b) => a.localeCompare(b));
+        totalCommands += names.length;
+        categories.push({ dir, displayName, names });
+    }
+
+    const fields = [];
+    for (let i = 0; i < categories.length; i++) {
+        const { displayName, names } = categories[i];
+        const tags = names.map(n => `\`${n}\``);
+        // Split into chunks that fit within Discord's 1024-char field limit
+        const chunks = [];
+        let cur = '';
+        for (const tag of tags) {
+            const next = cur ? `${cur} ${tag}` : tag;
+            if (next.length > 1024) {
+                if (cur) chunks.push(cur);
+                cur = tag;
+            } else {
+                cur = next;
+            }
+        }
+        if (cur) chunks.push(cur);
+
+        chunks.forEach((chunk, ci) => {
+            fields.push({
+                name: ci === 0 ? `${i + 1}. ${displayName}` : '\u200b',
+                value: chunk,
+                inline: false,
+            });
+        });
+    }
+
+    const embed = createEmbed({ title: 'All Commands', fields });
+    embed.setFooter({ text: `${totalCommands} Commands • ${categories.length} Categories` });
+
+    const selectOptions = [
+        { label: 'All Commands', value: ALL_COMMANDS_ID },
+        ...categories.map(c => ({ label: c.displayName, value: c.dir })),
     ];
 
-    const botName = client?.user?.username || "Bot";
-    const embed = createEmbed({
-        title: `📖 ${botName} Help`,
-        description: 'Set up your server, pick what to enable, then browse commands below.',
-        color: 'primary',
-        thumbnail: client.user?.displayAvatarURL?.({ size: 1024 }),
-        fields: [
-            {
-                name: '🚀 Getting Started',
-                value: [
-                    '**1. Launch setup** — Run `/configwizard` to configure prefix, mod role, and logs.',
-                    '**2. Enable systems** — Use `/commands dashboard` to turn categories on or off.',                    '**3. Browse commands** — Use the menu below to view categories and commands.',
-                ].join('\n'),
-                inline: false,
-            },
-            {
-                name: 'ℹ️ How It Works',
-                value: [
-                    '• Dashboard commands manage each feature visually',
-                    '• Settings are saved per server',
-                    '• Slash commands and prefixes both work once enabled',
-                ].join('\n'),
-                inline: false,
-            },
-        ],
-    });
+    const selectRow = createSelectMenu(CATEGORY_SELECT_ID, 'Choose a category...', selectOptions);
 
-    embed.setFooter({ 
-        text: "Made with ❤️" 
-    });
-    embed.setTimestamp();
-
-    const selectRow = createSelectMenu(
-        CATEGORY_SELECT_ID,
-        "Select to view the commands",
-        options,
-    );
-
-    return {
-        embeds: [embed],
-        components: [selectRow],
-    };
+    const result = { embeds: [embed], components: [selectRow] };
+    _cache = result;
+    _cacheTime = now;
+    return result;
 }
 
 export default {
@@ -123,36 +135,23 @@ export default {
         .setDescription("Displays the help menu with all available commands"),
 
     async execute(interaction, guildConfig, client) {
-        
-        const { MessageFlags } = await import('discord.js');
         await InteractionHelper.safeDefer(interaction);
-        
         const { embeds, components } = await createInitialHelpMenu(client);
-
-        await InteractionHelper.safeEditReply(interaction, {
-            embeds,
-            components,
-        });
+        await InteractionHelper.safeEditReply(interaction, { embeds, components });
 
         setTimeout(async () => {
             try {
-                if (!InteractionHelper.isInteractionValid(interaction)) {
-                    return;
-                }
-
+                if (!InteractionHelper.isInteractionValid(interaction)) return;
                 const closedEmbed = createEmbed({
                     title: "Help menu closed",
                     description: "Help menu has been closed, use /help again.",
                     color: "secondary",
                 });
-
                 await InteractionHelper.safeEditReply(interaction, {
                     embeds: [closedEmbed],
                     components: [],
                 });
-            } catch (error) {
-                logger.debug('Help menu close edit failed (interaction may have expired):', error?.message);
-            }
+            } catch {}
         }, HELP_MENU_TIMEOUT_MS);
     },
 };
