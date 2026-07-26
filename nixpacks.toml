@@ -1,9 +1,9 @@
 [phases.setup]
 pkgs = ["nodejs_20"]
-aptPkgs = ["postgresql-client", "curl"]
+aptPkgs = ["curl"]
 
 [start]
-healthCheckCmd = "curl -sf http://127.0.0.1:3000/health"
+cmd = "npm run start"
 
 [variables]
 PORT = "3000"
