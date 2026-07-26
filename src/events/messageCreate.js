@@ -1,5 +1,6 @@
 import { Events } from 'discord.js';
 import { logger } from '../utils/logger.js';
+import { createInitialHelpMenu } from '../commands/Core/help.js';
 import { getLevelingConfig, getUserLevelData } from '../services/leveling/leveling.js';
 import { addXp } from '../services/leveling/xpSystem.js';
 import { checkRateLimit } from '../utils/rateLimiter.js';
@@ -37,6 +38,8 @@ export default {
 
       logger.debug(`Message received from ${message.author.tag}: ${message.content}`);
 
+      if (await handleBotMention(message, client)) return;
+
       const countingProcessed = await handleCountingGame(message, client);
       if (countingProcessed) {
         return;
@@ -55,6 +58,21 @@ export default {
     }
   }
 };
+
+async function handleBotMention(message, client) {
+  const botId = client.user?.id;
+  if (!botId) return false;
+  const content = message.content.trim();
+  if (content !== `<@${botId}>` && content !== `<@!${botId}>`) return false;
+  try {
+    const { embeds, components } = await createInitialHelpMenu(client);
+    await message.reply({ embeds, components }).catch(() => {});
+    return true;
+  } catch (error) {
+    logger.error('Error handling bot mention:', error);
+    return false;
+  }
+}
 
 async function handlePrefixCommand(message, client) {
   try {
