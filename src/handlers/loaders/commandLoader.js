@@ -263,12 +263,26 @@ async function registerGlobalCommands(client, clientId, commands, totalSubcomman
     logger.info('Global commands may take up to an hour to appear in all servers on first deploy');
 }
 
+async function registerGuildCommands(client, clientId, guildId, commands) {
+    const commandsToRegister = prepareCommandsForRegistration(commands);
+    logger.info(`Registering ${commandsToRegister.length} commands to guild ${guildId} (instant)...`);
+    await client.rest.put(`/applications/${clientId}/guilds/${guildId}/commands`, { body: commandsToRegister });
+    logger.info(`Guild commands registered to ${guildId}`);
+}
+
 export async function registerCommands(client, options = {}) {
     const { clientId = null } = options;
 
     try {
         const { commands, totalSubcommands } = collectCommandPayloads(client);
         await registerGlobalCommands(client, clientId, commands, totalSubcommands);
+
+        // If GUILD_ID is set, also register to that guild for instant propagation (dev/test use).
+        // This does not affect global registration — it is additive only.
+        const guildId = process.env.GUILD_ID;
+        if (guildId) {
+            await registerGuildCommands(client, clientId, guildId, commands);
+        }
     } catch (error) {
         logger.error('Error registering commands:', error);
         throw error;
