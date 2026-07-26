@@ -1,6 +1,6 @@
 [phases.setup]
 pkgs = ["nodejs_20"]
-aptPkgs = ["curl"]
+aptPkgs = ["curl", "postgresql-client"]
 
 [start]
 cmd = "npm run start"
