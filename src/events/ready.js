@@ -1,6 +1,7 @@
 import { Events } from "discord.js";
 import { logger, startupLog } from "../utils/logger.js";
 import config from "../config/application.js";
+import { botConfig } from "../config/bot.js";
 import { reconcileReactionRoleMessages } from "../services/reactionRoleService.js";
 import { reconcileTicketPanels, reconcileVerificationPanels, reconcileReactionRolePanelHealth } from "../services/panelHealthService.js";
 import { reconcileLevelRoles } from "../services/leveling/levelRoleSyncService.js";
@@ -13,6 +14,11 @@ export default {
   async execute(client) {
     try {
       client.user.setPresence(config.bot.presence);
+
+      // Auto-populate embed author from the live bot profile so every
+      // createEmbed() call automatically shows bot avatar + username.
+      botConfig.embeds.author.name = client.user.username;
+      botConfig.embeds.author.icon = client.user.displayAvatarURL({ size: 64 });
 
       startupLog(`Ready! Logged in as ${client.user.tag}`);
       startupLog(`Serving ${client.guilds.cache.size} guild(s)`);

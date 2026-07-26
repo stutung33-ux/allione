@@ -65,11 +65,41 @@ To enable public invites you must tick **"Public Bot"** in the Discord Developer
 
 | Feature | File(s) |
 |---|---|
+| **Bot avatar in every embed** | `src/events/ready.js` — populates `botConfig.embeds.author` on startup; `createEmbed()` in `src/utils/embeds.js` applies it automatically |
+| **AI chat** | `src/commands/AI/ai.js`, `src/services/aiService.js` — OpenAI-powered chat with per-user history, cooldown, and owner toggle |
+| **Extended search** | `src/commands/Search/search.js` + new modules in `src/commands/Search/modules/` — Wikipedia, YouTube, GitHub, npm, Discord.js docs |
 | **Broadcast fix** | `src/commands/Moderation/broadcast.js` — newlines preserved, 500 ms delay between sends prevents rate-limit errors |
 | **`/giverole`** | `src/commands/Moderation/giverole.js` — add/remove a role for a specific member with permission + hierarchy checks |
 | **`/antiraid`** | `src/commands/Moderation/antiraid.js` — configure anti-raid (setup / disable / status / clear) |
 | **Anti-raid engine** | `src/services/antiraidService.js` — sliding-window join tracking, auto-kick/ban, alert channel support |
 | **Auto-detection** | `src/events/guildMemberAdd.js` — anti-raid check fires on every join |
+
+### AI Chat (`xai` / `/ai`)
+
+Requires the `OPENAI_API_KEY` environment secret (set via Replit Secrets).
+
+| Command | What it does |
+|---|---|
+| `xai <message>` | Chat with the AI |
+| `xai reset` | Clear your conversation history |
+| `xai toggle` | (Owner only) Enable / disable the AI feature |
+
+- Per-user conversation history (last 10 messages / 5 exchanges), reset on bot restart
+- 5-second cooldown per user
+- Owner toggle stored in-memory
+
+### Extended Search (`xsearch` / `/search`)
+
+| Subcommand | What it searches |
+|---|---|
+| `google <query>` | Google search link |
+| `wikipedia <query>` | Wikipedia summary + thumbnail (real content via REST API) |
+| `youtube <query>` | YouTube search link |
+| `github <query>` | Top GitHub repositories (live results via GitHub API) |
+| `npm <query>` | npm packages (live results via npm registry API) |
+| `djs <query>` | Discord.js docs link |
+| `urban <term>` | Urban Dictionary definition |
+| `define <word>` | Dictionary definition |
 
 ### Anti-Raid Quick Start
 ```

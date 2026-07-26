@@ -104,6 +104,13 @@ export const commandAliases = {
 
     'np': 'nowplaying',
     'now': 'nowplaying',
+
+    // AI chat
+    'ai': 'ai',
+
+    // Search
+    'search': 'search',
+    's': 'search',
 };
 
 export const subcommandAliases = {

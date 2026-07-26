@@ -479,6 +479,9 @@ export const botConfig = {
     community: true,
     fun: true,
     music: true,
+
+    // AI chat
+    ai: true,
   },
 };
 
@@ -553,6 +556,7 @@ const COMMAND_CATEGORY_FEATURE_MAP = {
   utility: "utility",
   verification: "verification",
   welcome: "welcome",
+  ai: "ai",
 };
 
 function normalizeCategoryKey(category) {
