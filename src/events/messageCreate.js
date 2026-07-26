@@ -65,8 +65,23 @@ async function handleBotMention(message, client) {
   const content = message.content.trim();
   if (content !== `<@${botId}>` && content !== `<@!${botId}>`) return false;
   try {
-    const { embeds, components } = await createInitialHelpMenu(client);
-    await message.reply({ embeds, components }).catch(() => {});
+    // Reuse the help menu for its select-menu components only
+    const { components } = await createInitialHelpMenu(client);
+    const introEmbed = createEmbed({
+      title: `👋 Hey there, ${message.author.username}!`,
+      description: [
+        'My default prefix here is `x`',
+        'You can use this prefix before any of my commands.',
+        '',
+        '**Example commands:**',
+        '• `xhelp` — Show all available commands',
+        '• `xautomod` — Show Automod commands',
+        '• `xlevel` — Show leveling commands',
+        '',
+        'Type `xhelp` to get started.',
+      ].join('\n'),
+    });
+    await message.reply({ embeds: [introEmbed], components }).catch(() => {});
     return true;
   } catch (error) {
     logger.error('Error handling bot mention:', error);
