@@ -116,7 +116,11 @@ class TitanBot extends Client {
 
   startWebServer() {
     const app = express();
-    const port = parseInt(process.env.PORT) || 3000;
+    // Hardcoded to 3000: Railway overrides PORT at runtime (e.g. 8080) but its
+    // nixpacks health probe always hits 127.0.0.1:3000. The web server is only
+    // used for health checks — the bot communicates with Discord via outbound
+    // websocket, so there is no user-facing HTTP traffic to route.
+    const port = 3000;
     const host = '0.0.0.0';
     
     // Health check - always returns 200 OK

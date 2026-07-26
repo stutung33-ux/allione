@@ -6,4 +6,5 @@ aptPkgs = ["curl", "postgresql-client"]
 cmd = "npm run start"
 
 [variables]
+PORT = "3000"
 NODE_ENV = "production"
