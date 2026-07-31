@@ -26,7 +26,7 @@ client.once('ready', () => {
     type: ActivityType.Listening,
     name: 'No Other Heart',
     details: 'Mac DeMarco',
-    state: 'Listening',
+    state: 'Playing',
   });
   
   console.log('✓ Status set: Listening to No Other Heart by Mac DeMarco');
